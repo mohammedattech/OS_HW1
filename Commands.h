@@ -134,7 +134,7 @@ class ChmodCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
-  // TODO: Add your data members
+  std::string m_prompt;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);

@@ -115,4 +115,42 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Command* cmd = CreateCommand(cmd_line);
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
+  char** args;
+  int argn=_parseCommandLine(cmd_line,args);
+  if(strcmp(args[0],"chprompt")==0)
+  {
+    if(argn==1)
+    {
+      m_prompt="smash";
+    }
+    else
+    {
+      m_prompt=args[1]; 
+    }
+  }
+  else
+  {
+    //CreateCommand(cmd_line)->execute();
+  }
+  
 }
+  ShowPidCommand::ShowPidCommand(const char* cmd_line)
+  {
+
+  }
+  ShowPidCommand::~ShowPidCommand()
+  {
+
+  }
+  void ShowPidCommand::execute()
+  {
+    pid_t smashPid=getpid();
+    if(smashPid==-1)
+    {
+      perror("smash Error:getpid failed");
+    }
+    else
+    {
+      cout << "smash pid is " << smashPid <<endl;
+    }
+  }
