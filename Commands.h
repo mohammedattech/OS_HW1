@@ -7,7 +7,10 @@
 #define COMMAND_MAX_ARGS (20)
 
 class Command {
-// TODO: Add your data members
+ private:
+  char* cmd_line;
+  char** m_args;
+  int m_argn; 
  public:
   Command(const char* cmd_line);
   virtual ~Command();
@@ -21,9 +24,13 @@ class BuiltInCommand : public Command {
  public:
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() {}
+  void execute() override;
 };
 
 class ExternalCommand : public Command {
+  pid_t m_pid;
+  int m_jobId;
+  bool m_isSIGstopped; //this field may be unneeded but I wanted to add it for now to avoid forgetting it
  public:
   ExternalCommand(const char* cmd_line);
   virtual ~ExternalCommand() {}
@@ -82,6 +89,7 @@ class QuitCommand : public BuiltInCommand {
 
 class JobsList {
  public:
+  std::vector<Command*> jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
   class JobEntry {
    // TODO: Add your data members
   };
@@ -134,7 +142,9 @@ class ChmodCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
+  JobsList m_shellCommands;
   std::string m_prompt;
+  std::string m_lastDirectory;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -148,6 +158,8 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  const std::string& getPrompt() const;
+  const std::string& getLastCommand() const;
   // TODO: add extra methods as needed
 };
 
