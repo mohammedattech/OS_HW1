@@ -89,10 +89,12 @@ class ShowPidCommand : public BuiltInCommand {
 
 class JobsList;
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-  QuitCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~QuitCommand() {}
-  void execute() override;
+  private:
+   JobsList* m_list;
+  public:
+   QuitCommand(const char* cmd_line, JobsList* jobs);
+   virtual ~QuitCommand()=default;
+   void execute() override;
 };
 
 
@@ -100,7 +102,7 @@ class QuitCommand : public BuiltInCommand {
 
 class JobsList {
  public:
-  std::vector<Command*> jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
+  std::vector<ExternalCommand*> jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
   class JobEntry {
    // TODO: Add your data members
   };
@@ -108,7 +110,7 @@ class JobsList {
  public:
   JobsList();
   ~JobsList();
-  void addJob(Command* cmd, bool isStopped = false);
+  void addJob(ExternalCommand* cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -120,10 +122,11 @@ class JobsList {
 };
 
 class JobsCommand : public BuiltInCommand {
- // TODO: Add your data members
+ private:
+  JobsList* m_list;
  public:
   JobsCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~JobsCommand() {}
+  virtual ~JobsCommand()=default;
   void execute() override;
 };
 
@@ -156,6 +159,7 @@ class SmallShell {
   JobsList m_shellCommands;
   std::string m_prompt;
   std::string m_lastDirectory;
+  bool m_continueFlag;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -172,6 +176,9 @@ class SmallShell {
   const std::string& getPrompt() const;
   const std::string& getLastCommand() const;
   void setPrompt(string newPrompt);//maybe should be changes to const&
+  JobsList* getJobsList();
+  bool canContinue() const;
+  void EndShell();
   // TODO: add extra methods as needed
 };
 

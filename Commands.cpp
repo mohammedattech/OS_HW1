@@ -186,3 +186,19 @@ void GetCurrDirCommand::execute()
   }
   delete[] buffer;
 }
+JobsCommand::JobsCommand(const char* cmd_line,JobsList* jobs):BuiltInCommand(cmd_line),m_list(jobs)
+{}
+void JobsCommand::execute()
+{
+  m_list->printJobsList();
+}
+QuitCommand::QuitCommand(const char* cmd_line,JobsList* jobs):BuiltInCommand(cmd_line),m_list(jobs)
+{}
+void QuitCommand::execute()
+{
+  if((m_argn==2)&&(strcmp(m_args[1],"kill")==0))
+  {
+    m_list->killAllJobs();
+  }
+  SmallShell::getInstance().EndShell();
+}
