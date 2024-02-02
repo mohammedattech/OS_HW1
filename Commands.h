@@ -7,9 +7,10 @@
 #define COMMAND_MAX_ARGS (20)
 
 class Command {
- private:
-  char* cmd_line;
-  char** m_args;
+ protected:
+  static const int MAX_COMMAND_SIZE=80;
+  string m_cmdLine;
+  char* m_args[MAX_COMMAND_SIZE];
   int m_argn; 
  public:
   Command(const char* cmd_line);
@@ -23,8 +24,8 @@ class Command {
 class BuiltInCommand : public Command {
  public:
   BuiltInCommand(const char* cmd_line);
-  virtual ~BuiltInCommand() {}
-  void execute() override;
+  virtual ~BuiltInCommand()= default;
+  virtual void execute()=0;
 };
 
 class ExternalCommand : public Command {
@@ -54,6 +55,14 @@ class RedirectionCommand : public Command {
   //void prepare() override;
   //void cleanup() override;
 };
+class ChangePromptCommand : public BuiltInCommand
+{
+public:
+  ChangePromptCommand(const char* cmd_line);
+  virtual ~ChangePromptCommand()=default;
+  void execute() override;
+};
+
 
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
@@ -62,8 +71,10 @@ class ChangeDirCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class GetCurrDirCommand : public BuiltInCommand {
+class GetCurrDirCommand : public BuiltInCommand 
+{
  public:
+  static const long MAX_PATH_LENGTH=4096;
   GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() {}
   void execute() override;
@@ -72,7 +83,7 @@ class GetCurrDirCommand : public BuiltInCommand {
 class ShowPidCommand : public BuiltInCommand {
  public:
   ShowPidCommand(const char* cmd_line);
-  virtual ~ShowPidCommand() {}
+  virtual ~ShowPidCommand() = default;
   void execute() override;
 };
 
@@ -160,6 +171,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   const std::string& getPrompt() const;
   const std::string& getLastCommand() const;
+  void setPrompt(string newPrompt);//maybe should be changes to const&
   // TODO: add extra methods as needed
 };
 

@@ -57,7 +57,8 @@ bool _isBackgroundComamnd(const char* cmd_line) {
   return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
 
-void _removeBackgroundSign(char* cmd_line) {
+void _removeBackgroundSign(char* cmd_line) 
+{
   const string str(cmd_line);
   // find last character other than spaces
   unsigned int idx = str.find_last_not_of(WHITESPACE);
@@ -117,40 +118,71 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Please note that you must fork smash process for some commands (e.g., external commands....)
   char** args;
   int argn=_parseCommandLine(cmd_line,args);
-  if(strcmp(args[0],"chprompt")==0)
+  //CreateCommand(cmd_line)->execute();
+}
+Command::Command(const char* cmdline):m_cmdLine(cmdline)
+{
+  m_args[0]=nullptr;
+  m_argn=_parseCommandLine(cmdline,m_args);
+}
+Command::~Command()
+{
+  int i=0;
+  while(m_args[i])
   {
-    if(argn==1)
+    free(m_args[i++]);
+  }
+}
+BuiltInCommand::BuiltInCommand(const char* cmdline):Command(cmdline)
+{}
+ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltInCommand(cmd_line)
+{}
+void ChangePromptCommand::execute()
+{
+  SmallShell& smash = SmallShell::getInstance();
+  if(m_argn==1)
     {
-      m_prompt="smash";
+      smash.setPrompt("smash");
     }
     else
     {
-      m_prompt=args[1]; 
+      smash.setPrompt(m_args[1]); 
     }
+
+}
+ShowPidCommand::ShowPidCommand(const char* cmd_line): BuiltInCommand(cmd_line)
+{}
+void ShowPidCommand::execute()
+{
+  pid_t smashPid=getpid();
+  if(smashPid==-1)
+  {
+    perror("smash Error:getpid failed");
   }
   else
   {
-    //CreateCommand(cmd_line)->execute();
+    cout << "smash pid is " << smashPid <<endl;
   }
-  
 }
-  ShowPidCommand::ShowPidCommand(const char* cmd_line)
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line):BuiltInCommand(cmd_line)
+{}
+void GetCurrDirCommand::execute()
+{
+  const char* path=".";
+  long pathMax=pathconf(path,_PC_PATH_MAX);
+  if(pathMax==-1)
   {
-
+    perror("smash error: pathconf failed");
+    pathMax=MAX_PATH_LENGTH;
   }
-  ShowPidCommand::~ShowPidCommand()
+  char* buffer = new char[pathMax];
+  if (getcwd(buffer, pathMax) != nullptr) 
   {
-
-  }
-  void ShowPidCommand::execute()
+    std::cout << buffer << std::endl;
+  } 
+  else 
   {
-    pid_t smashPid=getpid();
-    if(smashPid==-1)
-    {
-      perror("smash Error:getpid failed");
-    }
-    else
-    {
-      cout << "smash pid is " << smashPid <<endl;
-    }
+    perror("smash error: getcwd failed");
   }
+  delete[] buffer;
+}
