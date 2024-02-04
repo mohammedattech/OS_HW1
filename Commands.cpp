@@ -75,7 +75,16 @@ void _removeBackgroundSign(char* cmd_line)
   // truncate the command line string up to the last non-space character
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
-
+bool findCharachter(const char* cmd_line,char character)
+{
+  string command=string(cmd_line);
+  if(command.find_first_of(character)==string::npos)
+  {
+    return false;
+  }
+  return true;
+  
+}
 // TODO: Add your implementation for classes in Commands.h 
 
 SmallShell::SmallShell() {
@@ -169,12 +178,7 @@ GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line):BuiltInCommand(cmd_li
 void GetCurrDirCommand::execute()
 {
   const char* path=".";
-  long pathMax=pathconf(path,_PC_PATH_MAX);
-  if(pathMax==-1)
-  {
-    perror("smash error: pathconf failed");
-    pathMax=MAX_PATH_LENGTH;
-  }
+  int pathMax=MAX_PATH_LENGTH;
   char* buffer = new char[pathMax];
   if (getcwd(buffer, pathMax) != nullptr) 
   {
@@ -202,3 +206,6 @@ void QuitCommand::execute()
   }
   SmallShell::getInstance().EndShell();
 }
+
+ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line),m_pid(-1),m_backGround(_isBackgroundComamnd(cmd_line)),m_isComplex(findCharachter(cmd_line,'*')||findCharachter(cmd_line,'?')),m_listEntry(nullptr)
+{}

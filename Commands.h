@@ -6,6 +6,7 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
+class JobsList;
 class Command {
  protected:
   static const int MAX_COMMAND_SIZE=80;
@@ -28,14 +29,20 @@ class BuiltInCommand : public Command {
   virtual void execute()=0;
 };
 
-class ExternalCommand : public Command {
+class ExternalCommand : public Command 
+{
   pid_t m_pid;
-  int m_jobId;
-  bool m_isSIGstopped; //this field may be unneeded but I wanted to add it for now to avoid forgetting it
+  bool m_backGround;
+  bool m_isComplex;
+  JobsList::JobEntry* m_listEntry;
  public:
   ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand() {}
+  virtual ~ExternalCommand();
   void execute() override;
+  bool backGround() const;
+  bool complex() const;
+  void addEntry(JobsList::JobEntry* entry);
+  const JobsList::JobEntry* getJobEntry() const;
 };
 
 class PipeCommand : public Command {
@@ -74,7 +81,7 @@ class ChangeDirCommand : public BuiltInCommand {
 class GetCurrDirCommand : public BuiltInCommand 
 {
  public:
-  static const long MAX_PATH_LENGTH=4096;
+  static const int MAX_PATH_LENGTH=80;
   GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() {}
   void execute() override;
@@ -87,7 +94,7 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class JobsList;
+
 class QuitCommand : public BuiltInCommand {
   private:
    JobsList* m_list;
@@ -103,8 +110,14 @@ class QuitCommand : public BuiltInCommand {
 class JobsList {
  public:
   std::vector<ExternalCommand*> jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
-  class JobEntry {
-   // TODO: Add your data members
+  class JobEntry 
+  {
+    private:
+     int m_jobId;
+    public:
+     JobEntry(int jobId);
+     ~JobEntry()=default;
+     int getJobId() const;
   };
  // TODO: Add your data members
  public:
@@ -156,10 +169,11 @@ class ChmodCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
-  JobsList m_shellCommands;
+  JobsList* m_shellCommands;
   std::string m_prompt;
   std::string m_lastDirectory;
   bool m_continueFlag;
+  ExternalCommand* forGroundJob;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
