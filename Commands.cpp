@@ -302,3 +302,43 @@ void JobsList::killAllJobs()
     }
   }
 }
+bool JobFinished(ExternalCommand* cmd)
+{
+  pid_t status=waitpid(cmd->getPid(),nullptr,WNOHANG);
+  if(status==-1)
+  {
+    perror("smash error:waitpid failed");
+  }
+  if(status>0)
+  {
+    return true;
+  }
+  return false;
+}
+void JobsList::removeFinishedJobs()
+{
+  m_jobs.erase(std::remove_if(m_jobs.begin(),m_jobs.end(),JobFinished),m_jobs.end());
+}
+ExternalCommand* JobsList::getJobById(int jobId)
+{
+  ExternalCommand* cmd=nullptr;
+  for(ExternalCommand* job:m_jobs)
+  {
+    if(job->getJobEntry()->getJobId()==jobId)
+    {
+      cmd=job;
+    }
+  }
+  return cmd;
+}
+void JobsList::removeJobById(int jobId)
+{
+  for(std::vector<ExternalCommand*>::iterator i=m_jobs.begin();i!=m_jobs.end();i++)
+  {
+    if((*i)->getJobEntry()->getJobId()==jobId)
+    {
+      m_jobs.erase(i);
+      break; 
+    }
+  }
+}

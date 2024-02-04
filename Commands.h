@@ -4,6 +4,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <signals.h>
+#include <algorithm>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -135,10 +136,10 @@ class JobsList {
   void removeFinishedJobs();
   ExternalCommand * getJobById(int jobId);
   void removeJobById(int jobId);
-  JobEntry * getLastJob(int* lastJobId);
-  JobEntry *getLastStoppedJob(int *jobId);
+  //JobEntry * getLastJob(int* lastJobId);
+  //JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
-};
+}; 
 
 class JobsCommand : public BuiltInCommand {
  private:
