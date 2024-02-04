@@ -2,6 +2,8 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <sys/types.h>
+#include <signals.h>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -9,14 +11,16 @@
 class JobsList;
 class Command {
  protected:
-  static const int MAX_COMMAND_SIZE=80;
   string m_cmdLine;
-  char* m_args[MAX_COMMAND_SIZE];
-  int m_argn; 
+  int m_argn;
+  char** m_args;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
   virtual void execute() = 0;
+  const char* getCommandLine() const;
+  char** getArguments() const;
+  int getNumberOfArguments() const;
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
@@ -42,7 +46,9 @@ class ExternalCommand : public Command
   bool backGround() const;
   bool complex() const;
   void addEntry(JobsList::JobEntry* entry);
-  const JobsList::JobEntry* getJobEntry() const;
+  void setPid(pid_t pid);
+  pid_t getPid() const;
+  JobsList::JobEntry* getJobEntry() const;
 };
 
 class PipeCommand : public Command {
@@ -109,7 +115,7 @@ class QuitCommand : public BuiltInCommand {
 
 class JobsList {
  public:
-  std::vector<ExternalCommand*> jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
+  std::vector<ExternalCommand*> m_jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
   class JobEntry 
   {
     private:
@@ -121,13 +127,13 @@ class JobsList {
   };
  // TODO: Add your data members
  public:
-  JobsList();
-  ~JobsList();
-  void addJob(ExternalCommand* cmd, bool isStopped = false);
+  JobsList()=default;
+  ~JobsList()=default;
+  void addJob(ExternalCommand* cmd);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
-  JobEntry * getJobById(int jobId);
+  ExternalCommand * getJobById(int jobId);
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);

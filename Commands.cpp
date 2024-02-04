@@ -41,11 +41,19 @@ int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_ENTRY()
   int i = 0;
   std::istringstream iss(_trim(string(cmd_line)).c_str());
-  for(std::string s; iss >> s; ) {
-    args[i] = (char*)malloc(s.length()+1);
-    memset(args[i], 0, s.length()+1);
-    strcpy(args[i], s.c_str());
-    args[++i] = NULL;
+  for(std::string s; iss >> s; ) 
+  {
+    if(args)
+    {
+      args[i] = (char*)malloc(s.length()+1);
+      memset(args[i], 0, s.length()+1);
+      strcpy(args[i], s.c_str());
+      args[++i] = NULL;
+    }
+    else
+    {
+      i++;
+    }
   }
   return i;
 
@@ -129,10 +137,10 @@ void SmallShell::executeCommand(const char *cmd_line) {
   int argn=_parseCommandLine(cmd_line,args);
   //CreateCommand(cmd_line)->execute();
 }
-Command::Command(const char* cmdline):m_cmdLine(cmdline)
+Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr)),m_args(new char*[m_argn+1])
 {
   m_args[0]=nullptr;
-  m_argn=_parseCommandLine(cmdline,m_args);
+  _parseCommandLine(cmdline,m_args);
 }
 Command::~Command()
 {
@@ -141,6 +149,19 @@ Command::~Command()
   {
     free(m_args[i++]);
   }
+  delete[] m_args;
+}
+const char* Command::getCommandLine() const
+{
+  return m_cmdLine.c_str();
+}
+char** Command::getArguments() const
+{
+  return m_args;
+}
+int Command::getNumberOfArguments() const
+{
+  return m_argn;
 }
 BuiltInCommand::BuiltInCommand(const char* cmdline):Command(cmdline)
 {}
@@ -166,7 +187,7 @@ void ShowPidCommand::execute()
   pid_t smashPid=getpid();
   if(smashPid==-1)
   {
-    perror("smash Error:getpid failed");
+    perror("smash error:getpid failed");
   }
   else
   {
@@ -209,3 +230,75 @@ void QuitCommand::execute()
 
 ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line),m_pid(-1),m_backGround(_isBackgroundComamnd(cmd_line)),m_isComplex(findCharachter(cmd_line,'*')||findCharachter(cmd_line,'?')),m_listEntry(nullptr)
 {}
+ExternalCommand::~ExternalCommand()
+{
+  if(m_listEntry)
+  {
+    delete m_listEntry;
+  }
+}
+bool ExternalCommand::complex() const
+{
+  return m_isComplex;
+}
+bool ExternalCommand::backGround() const
+{
+  return m_backGround;
+}
+void ExternalCommand::addEntry(JobsList::JobEntry* entry)
+{
+  m_listEntry = entry; 
+}
+JobsList::JobEntry* ExternalCommand::getJobEntry() const
+{
+  return m_listEntry;
+}
+void ExternalCommand::setPid(pid_t pid)
+{
+  m_pid=pid;
+}
+pid_t ExternalCommand::getPid()const
+{
+  return m_pid;
+}
+void ExternalCommand::execute()
+{
+  
+}
+JobsList::JobEntry::JobEntry(int jobId):m_jobId(jobId)
+{}
+int JobsList::JobEntry::getJobId() const
+{
+  return m_jobId;
+}
+void JobsList::addJob(ExternalCommand* cmd)
+{
+  int jobId;
+  if(m_jobs.size()==0)
+  {
+    jobId = 1;
+  }
+  else
+  {
+    jobId=m_jobs.back()->getJobEntry()->getJobId()+1;
+  }
+  cmd->addEntry(new JobsList::JobEntry(jobId));
+  m_jobs.push_back(cmd);
+}
+void JobsList::printJobsList()
+{
+  for (const ExternalCommand* job: m_jobs)
+  {
+    std::cout << "[" << job->getJobEntry()->getJobId() << "]" << " " << job->getCommandLine() << std::endl;
+  }
+}
+void JobsList::killAllJobs()
+{
+  for(const ExternalCommand* job: m_jobs)
+  {
+    if(kill(job->getPid(),SIGKILL)==-1)
+    {
+      perror("smash error:kill failed");
+    }
+  }
+}
