@@ -136,7 +136,7 @@ class JobsList {
   void removeFinishedJobs();
   ExternalCommand * getJobById(int jobId);
   void removeJobById(int jobId);
-  //JobEntry * getLastJob(int* lastJobId);
+  ExternalCommand* getLastJob();
   //JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
 }; 

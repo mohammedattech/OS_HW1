@@ -97,9 +97,8 @@ bool findCharachter(const char* cmd_line,char character)
 }
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell() {
-// TODO: add your implementation
-}
+SmallShell::SmallShell():m_prompt("smash"),m_lastDirectory(""),m_continueFlag(true),forGroundJob(nullptr)
+{}
 
 SmallShell::~SmallShell() {
 // TODO: add your implementation
@@ -138,6 +137,14 @@ void SmallShell::executeCommand(const char *cmd_line) {
   char** args;
   int argn=_parseCommandLine(cmd_line,args);
   //CreateCommand(cmd_line)->execute();
+}
+void SmallShell::EndShell()
+{
+  m_continueFlag=false;
+}
+bool SmallShell::canContinue() const
+{
+  return m_continueFlag;
 }
 Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr))
 {
