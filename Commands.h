@@ -3,16 +3,17 @@
 
 #include <vector>
 #include <sys/types.h>
-#include <signals.h>
+#include "signals.h"
 #include <algorithm>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
 class JobsList;
+class JobEntry;
 class Command {
  protected:
-  string m_cmdLine;
+  std::string m_cmdLine;
   int m_argn;
   char** m_args;
  public:
@@ -39,17 +40,17 @@ class ExternalCommand : public Command
   pid_t m_pid;
   bool m_backGround;
   bool m_isComplex;
-  JobsList::JobEntry* m_listEntry;
+  JobEntry* m_listEntry;
  public:
   ExternalCommand(const char* cmd_line);
   virtual ~ExternalCommand();
   void execute() override;
   bool backGround() const;
   bool complex() const;
-  void addEntry(JobsList::JobEntry* entry);
+  void addEntry(JobEntry* entry);
   void setPid(pid_t pid);
   pid_t getPid() const;
-  JobsList::JobEntry* getJobEntry() const;
+  JobEntry* getJobEntry() const;
 };
 
 class PipeCommand : public Command {
@@ -112,20 +113,19 @@ class QuitCommand : public BuiltInCommand {
 };
 
 
-
+class JobEntry
+{
+private:
+    int m_jobId;
+public:
+    JobEntry(int jobId);
+    ~JobEntry()=default;
+    int getJobId() const;
+};
 
 class JobsList {
- public:
+ private:
   std::vector<ExternalCommand*> m_jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
-  class JobEntry 
-  {
-    private:
-     int m_jobId;
-    public:
-     JobEntry(int jobId);
-     ~JobEntry()=default;
-     int getJobId() const;
-  };
  // TODO: Add your data members
  public:
   JobsList()=default;
@@ -196,7 +196,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   const std::string& getPrompt() const;
   const std::string& getLastCommand() const;
-  void setPrompt(string newPrompt);//maybe should be changes to const&
+  void setPrompt(std::string newPrompt);//maybe should be changes to const&
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();

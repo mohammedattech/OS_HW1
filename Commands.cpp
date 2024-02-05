@@ -3,12 +3,14 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <sys/types.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
 
 using namespace std;
-
+static char WHITESPACE=' ';
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -137,8 +139,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
   int argn=_parseCommandLine(cmd_line,args);
   //CreateCommand(cmd_line)->execute();
 }
-Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr)),m_args(new char*[m_argn+1])
+Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr))
 {
+  m_args=(new char*[m_argn+1]);
   m_args[0]=nullptr;
   _parseCommandLine(cmdline,m_args);
 }
@@ -245,11 +248,11 @@ bool ExternalCommand::backGround() const
 {
   return m_backGround;
 }
-void ExternalCommand::addEntry(JobsList::JobEntry* entry)
+void ExternalCommand::addEntry(JobEntry* entry)
 {
   m_listEntry = entry; 
 }
-JobsList::JobEntry* ExternalCommand::getJobEntry() const
+JobEntry* ExternalCommand::getJobEntry() const
 {
   return m_listEntry;
 }
@@ -265,9 +268,9 @@ void ExternalCommand::execute()
 {
   
 }
-JobsList::JobEntry::JobEntry(int jobId):m_jobId(jobId)
+JobEntry::JobEntry(int jobId):m_jobId(jobId)
 {}
-int JobsList::JobEntry::getJobId() const
+int JobEntry::getJobId() const
 {
   return m_jobId;
 }
@@ -282,7 +285,7 @@ void JobsList::addJob(ExternalCommand* cmd)
   {
     jobId=m_jobs.back()->getJobEntry()->getJobId()+1;
   }
-  cmd->addEntry(new JobsList::JobEntry(jobId));
+  cmd->addEntry(new JobEntry(jobId));
   m_jobs.push_back(cmd);
 }
 void JobsList::printJobsList()
