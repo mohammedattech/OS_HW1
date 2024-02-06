@@ -8,6 +8,7 @@
 #include <iomanip>
 #include "Commands.h"
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 
 using namespace std;
@@ -372,7 +373,37 @@ void KillCommand::execute()
 }
 
 
-
+ChmodCommand::ChmodCommand(const char* cmd_line):BuiltInCommand(cmd_line)
+{}
+void ChmodCommand::execute()
+{
+  if(m_argn!=3)
+  {
+    perror("smash error: chmod:invalid arguments");
+    return;
+  }
+  string modestr(m_args[1]);
+  modestr.insert(0,1,'0');
+  int mode;
+  try
+  {
+    mode=std::stoi(modestr,nullptr,8);
+  }
+  catch(const std::exception& e)
+  {
+    perror("smash error: chmod:invalid arguments");
+    return;
+  }
+  if(mode>0777||mode<0)
+  {
+    perror("smash error: chmod:invalid arguments");
+    return;
+  }
+  if(chmod(m_args[2],mode)==-1)
+  {
+    perror("smash error: chmod failed");
+  }
+}
 
 
 ExternalCommand::ExternalCommand(const char* cmd_line): Command(cmd_line), m_pid(-1), m_backGround(
@@ -463,7 +494,6 @@ void ExternalCommand::execute()
       }
     }
   }
-
 }
 JobEntry::JobEntry(int jobId):m_jobId(jobId)
 {}

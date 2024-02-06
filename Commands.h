@@ -169,7 +169,7 @@ class KillCommand : public BuiltInCommand {
 class ChmodCommand : public BuiltInCommand {
  public:
   ChmodCommand(const char* cmd_line);
-  virtual ~ChmodCommand() {}
+  virtual ~ChmodCommand()=default;
   void execute() override;
 };
 
