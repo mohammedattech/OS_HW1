@@ -10,12 +10,12 @@
 #define COMMAND_MAX_ARGS (20)
 #define MAX_PATH_LENGTH (80)
 
-class JobsList;
+class JobsList; 
 class JobEntry;
 
 class Command {
  protected:
-  std::string m_cmdLine;
+  char* m_cmdLine;
   int m_argn;
   char** m_args;
  public:
@@ -40,7 +40,8 @@ class ExternalCommand : public Command
   pid_t m_pid;
   bool m_backGround;
   bool m_isComplex;
-  int m_jobId;
+  int m_jobId; 
+  char* m_noAnd;
  public:
   ExternalCommand(const char* cmd_line);
   virtual ~ExternalCommand()=default;
@@ -148,19 +149,20 @@ class JobsCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class KillCommand : public BuiltInCommand {
- // TODO: Add your data members
- public:
-  KillCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~KillCommand() {}
-  void execute() override;
-};
 
 class ForegroundCommand : public BuiltInCommand {
     JobsList* jobs;
 public:
   ForegroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~ForegroundCommand() {}
+  void execute() override;
+};
+
+class KillCommand : public BuiltInCommand {
+    JobsList* jobs;
+ public:
+  KillCommand(const char* cmd_line, JobsList* jobs);
+  virtual ~KillCommand() {}
   void execute() override;
 };
 
@@ -198,6 +200,7 @@ class SmallShell {
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();
+  void bringToForeground(ExternalCommand* cmd); 
   // TODO: add extra methods as needed
 };
 

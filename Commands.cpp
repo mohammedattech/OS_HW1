@@ -67,6 +67,16 @@ bool _isBackgroundCommand(const char* cmd_line) {
   const string str(cmd_line);
   return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
+int calculateLength(const char* str)
+{
+  int len=1;
+  while(*(str)!='0')
+  {
+    len++;
+    str++;
+  }
+  return len;
+}
 
 void _removeBackgroundSign(char* cmd_line) 
 {
@@ -142,11 +152,12 @@ void SmallShell::executeCommand(const char *cmd_line) {
   //CreateCommand(cmd_line)->execute();
 }
 
-Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr))
+Command::Command(const char* cmdline):m_cmdLine(new char[calculateLength(cmdline)]),m_argn(_parseCommandLine(cmdline,nullptr))
 {
   m_args=(new char*[m_argn+1]);
   m_args[0]=nullptr;
   _parseCommandLine(cmdline,m_args);
+  strcpy(m_cmdLine,cmdline);
 }
 Command::~Command()
 {
@@ -156,11 +167,12 @@ Command::~Command()
     free(m_args[i++]);
   }
   delete[] m_args;
+  delete[] m_cmdLine;
 }
 
 const char* Command::getCommandLine() const
 {
-  return m_cmdLine.c_str();
+  return m_cmdLine;
 }
 char** Command::getArguments() const
 {
@@ -277,6 +289,10 @@ ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs):  Bui
 
 void ForegroundCommand::execute() {
 
+      int jobId;
+
+  SmallShell& smash = SmallShell::getInstance();
+
     if(m_argn==1){
         // get the process with the max pid
         ExternalCommand* LastJob= jobs->getLastJob();
@@ -284,12 +300,26 @@ void ForegroundCommand::execute() {
             // if the vector is empty perror
             perror("smash error: fg: jobs list is empty");
         }else{
+          smash.bringToForeground(LastJob);
             //bring to foreground
-            //*****************jobs->bringToForeground(LastJob->)
         }
 
     }else if(m_argn==2){
         // format the arguments to int and if not then perror
+        try
+        {
+          jobId=stoi(m_args[1]);
+        }
+        catch(const std::exception& e)
+        {
+        perror("smash error: fg: invalid arguments");
+        }
+        if(jobs->getJobById(jobId)==nullptr){
+          perror("smash error: fg: job-id <job-id> does not exist");
+        }
+        else{
+         smash.bringToForeground(jobs->getJobById(jobId));
+        }
         // print the process command line
         //TODO bring the process with JOB_Id to the foreground
         //TODO delete all the finshed commands
@@ -302,15 +332,68 @@ void ForegroundCommand::execute() {
 
 }
 
+KillCommand::KillCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),jobs(jobs) {}
 
+void KillCommand::execute() 
+{
+
+    int jobId;
+    int signal;
+    SmallShell& smash = SmallShell::getInstance();
+
+    if(m_argn==3){
+       //checking the format 
+       if(m_args[1][0]!='-'){
+        perror("smash error: kill: invalid arguments");
+       }else{
+         try
+        {
+          signal=stoi(++m_args[1]);
+          jobId=stoi(m_args[2]);
+        }
+        catch(const std::exception& e)
+        {
+        perror("smash error: kill: invalid arguments");
+        }
+        if(jobs->getJobById(jobId)==nullptr){
+          perror("smash error: kill: job-id <job-id> does not exist");
+       }
+       else{
+
+        kill(jobs->getJobById(jobId)->getPid(),signal) ;
+       }
+       }
+    }else{
+        perror("smash error: kill: invalid arguments");
+    }
+
+
+
+}
 
 
 
 
 
 ExternalCommand::ExternalCommand(const char* cmd_line): Command(cmd_line), m_pid(-1), m_backGround(
-        _isBackgroundCommand(cmd_line)), m_isComplex(findCharacter(cmd_line, '*') || findCharacter(cmd_line, '?')), m_jobId(-1)
-{}
+        _isBackgroundCommand(cmd_line)), m_isComplex(findCharacter(cmd_line, '*') || findCharacter(cmd_line, '?')), m_jobId(-1),m_noAnd(nullptr)
+{
+  if(m_backGround)
+  {
+    char* dummy=new char[calculateLength(cmd_line)];
+    strcpy(dummy,m_cmdLine);
+    _removeBackgroundSign(dummy);
+    int i=0;
+    while(m_args[i])
+    {
+      free(m_args[i++]);
+    }
+    delete[] m_args;
+    m_args=new char*[m_argn-1];
+    m_argn=_parseCommandLine(dummy,m_args);
+    m_noAnd=dummy;
+  }
+}
 bool ExternalCommand::complex() const
 {
   return m_isComplex;
@@ -337,7 +420,50 @@ int ExternalCommand::getJobId() const
 }
 void ExternalCommand::execute()
 {
-  
+  char* Command=m_cmdLine;
+  if(m_backGround)
+  {
+    Command=m_noAnd;
+  }
+  char* cmd="./bin/bash";
+  char* const argv[]={"./bin/bash","-c",Command};
+  if(!m_isComplex)
+  {
+    cmd=m_args[0];
+    char** argv=m_args; 
+  }
+  pid_t sonPid=fork();
+  if(sonPid==-1)
+  {
+    perror("smash error: fork failed");
+  }
+  else
+  {
+    if(sonPid==0)
+    {
+      if(setpgrp()==-1)
+      {
+        perror("smash error: setpgrp failed");
+      }
+      execvp(cmd,argv);
+      perror("smash error: execvp failed");
+      exit(0);
+    }
+    else
+    {
+      m_pid=sonPid;
+      SmallShell& shell=SmallShell::getInstance();
+      if(m_backGround)
+      {
+        shell.getJobsList()->addJob(this);
+      }
+      else
+      {
+        shell.bringToForeground(this);
+      }
+    }
+  }
+
 }
 JobEntry::JobEntry(int jobId):m_jobId(jobId)
 {}
@@ -370,6 +496,7 @@ void JobsList::killAllJobs()
 {
   for(const ExternalCommand* job: m_jobs)
   {
+    std::cout << job->getPid() << ": " << job->getCommandLine() << std::endl;
     if(kill(job->getPid(),SIGKILL)==-1)
     {
       perror("smash error:kill failed");
@@ -425,8 +552,18 @@ ExternalCommand *JobsList::getLastJob() {
     return jobToReturen;
 }
 
-void JobsList::bringToForeground(int jobId) 
+void SmallShell::bringToForeground(ExternalCommand* cmd)
 {
-
-
+  m_shellCommands->removeJobById(cmd->getJobId());
+  forGroundJob=cmd;
+  std::cout << cmd->getCommandLine() << " " << cmd->getPid() <<std::endl;
+  if(waitpid(cmd->getPid(),nullptr,0)==-1)
+  {
+    perror("smash error: waitpid failed");
+  }
+  forGroundJob=nullptr;
 }
+
+
+
+
