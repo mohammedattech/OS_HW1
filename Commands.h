@@ -40,17 +40,17 @@ class ExternalCommand : public Command
   pid_t m_pid;
   bool m_backGround;
   bool m_isComplex;
-  JobEntry* m_listEntry;
+  int m_jobId;
  public:
   ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand();
+  virtual ~ExternalCommand()=default;
   void execute() override;
   bool backGround() const;
   bool complex() const;
-  void addEntry(JobEntry* entry);
+  void assignJobId(int id);
   void setPid(pid_t pid);
   pid_t getPid() const;
-  JobEntry* getJobEntry() const;
+  int getJobId() const;
 };
 
 class PipeCommand : public Command {

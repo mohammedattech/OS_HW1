@@ -309,15 +309,8 @@ void ForegroundCommand::execute() {
 
 
 ExternalCommand::ExternalCommand(const char* cmd_line): Command(cmd_line), m_pid(-1), m_backGround(
-        _isBackgroundCommand(cmd_line)), m_isComplex(findCharacter(cmd_line, '*') || findCharacter(cmd_line, '?')), m_listEntry(nullptr)
+        _isBackgroundCommand(cmd_line)), m_isComplex(findCharacter(cmd_line, '*') || findCharacter(cmd_line, '?')), m_jobId(-1)
 {}
-ExternalCommand::~ExternalCommand()
-{
-  if(m_listEntry)
-  {
-    delete m_listEntry;
-  }
-}
 bool ExternalCommand::complex() const
 {
   return m_isComplex;
@@ -326,13 +319,9 @@ bool ExternalCommand::backGround() const
 {
   return m_backGround;
 }
-void ExternalCommand::addEntry(JobEntry* entry)
+void ExternalCommand::assignJobId(int id)
 {
-  m_listEntry = entry; 
-}
-JobEntry* ExternalCommand::getJobEntry() const
-{
-  return m_listEntry;
+  m_jobId =id;
 }
 void ExternalCommand::setPid(pid_t pid)
 {
@@ -341,6 +330,10 @@ void ExternalCommand::setPid(pid_t pid)
 pid_t ExternalCommand::getPid()const
 {
   return m_pid;
+}
+int ExternalCommand::getJobId() const
+{
+  return m_jobId;
 }
 void ExternalCommand::execute()
 {
@@ -361,16 +354,16 @@ void JobsList::addJob(ExternalCommand* cmd)
   }
   else
   {
-    jobId=m_jobs.back()->getJobEntry()->getJobId()+1;
+    jobId=m_jobs.back()->getJobId()+1;
   }
-  cmd->addEntry(new JobEntry(jobId));
+  cmd->assignJobId(jobId);
   m_jobs.push_back(cmd);
 }
 void JobsList::printJobsList()
 {
   for (const ExternalCommand* job: m_jobs)
   {
-    std::cout << "[" << job->getJobEntry()->getJobId() << "]" << " " << job->getCommandLine() << std::endl;
+    std::cout << "[" << job->getJobId() << "]" << " " << job->getCommandLine() << std::endl;
   }
 }
 void JobsList::killAllJobs()
@@ -405,7 +398,7 @@ ExternalCommand* JobsList::getJobById(int jobId)
   ExternalCommand* cmd=nullptr;
   for(ExternalCommand* job:m_jobs)
   {
-    if(job->getJobEntry()->getJobId()==jobId)
+    if(job->getJobId()==jobId)
     {
       cmd=job;
     }
@@ -416,7 +409,7 @@ void JobsList::removeJobById(int jobId)
 {
   for(std::vector<ExternalCommand*>::iterator i=m_jobs.begin();i!=m_jobs.end();i++)
   {
-    if((*i)->getJobEntry()->getJobId()==jobId)
+    if((*i)->getJobId()==jobId)
     {
       m_jobs.erase(i);
       break; 
@@ -432,7 +425,8 @@ ExternalCommand *JobsList::getLastJob() {
     return jobToReturen;
 }
 
-void JobsList::bringToForeground(int jobId) {
+void JobsList::bringToForeground(int jobId) 
+{
 
 
 }
