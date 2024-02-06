@@ -1,0 +1,60 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.19"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "skeleton_smash",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "skeleton_smash::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-skeleton_smash-Debug-61dff8cce1424ecbcad5.json",
+					"name" : "skeleton_smash",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/update/OneDrive - Technion/Technion/Semester_5/234123-OS/HomeWorks/HW1/OS_HW1/cmake-build-debug",
+		"source" : "C:/Users/update/OneDrive - Technion/Technion/Semester_5/234123-OS/HomeWorks/HW1/OS_HW1"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}

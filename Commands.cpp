@@ -5,9 +5,10 @@
 #include <sstream>
 #include <sys/types.h>
 #include <signal.h>
-#include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
+#include <sys/wait.h>
+
 
 using namespace std;
 static char WHITESPACE=' ';
@@ -62,7 +63,7 @@ int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_EXIT()
 }
 
-bool _isBackgroundComamnd(const char* cmd_line) {
+bool _isBackgroundCommand(const char* cmd_line) {
   const string str(cmd_line);
   return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
@@ -85,7 +86,7 @@ void _removeBackgroundSign(char* cmd_line)
   // truncate the command line string up to the last non-space character
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
-bool findCharachter(const char* cmd_line,char character)
+bool findCharacter(const char* cmd_line, char character)
 {
   string command=string(cmd_line);
   if(command.find_first_of(character)==string::npos)
@@ -98,7 +99,8 @@ bool findCharachter(const char* cmd_line,char character)
 // TODO: Add your implementation for classes in Commands.h 
 
 SmallShell::SmallShell() {
-// TODO: add your implementation
+    m_lastDirectory= nullptr;
+// TODO: this implementation is not enough
 }
 
 SmallShell::~SmallShell() {
@@ -117,7 +119,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
   }
-  else if (firstWord.compare("showpid") == 0) {
+  else if (firstWord.compare("ShowPId") == 0) {
     return new ShowPidCommand(cmd_line);
   }
   else if ...
@@ -139,6 +141,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
   int argn=_parseCommandLine(cmd_line,args);
   //CreateCommand(cmd_line)->execute();
 }
+
 Command::Command(const char* cmdline):m_cmdLine(cmdline),m_argn(_parseCommandLine(cmdline,nullptr))
 {
   m_args=(new char*[m_argn+1]);
@@ -154,6 +157,7 @@ Command::~Command()
   }
   delete[] m_args;
 }
+
 const char* Command::getCommandLine() const
 {
   return m_cmdLine.c_str();
@@ -166,6 +170,8 @@ int Command::getNumberOfArguments() const
 {
   return m_argn;
 }
+
+
 BuiltInCommand::BuiltInCommand(const char* cmdline):Command(cmdline)
 {}
 ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltInCommand(cmd_line)
@@ -214,12 +220,14 @@ void GetCurrDirCommand::execute()
   }
   delete[] buffer;
 }
+
 JobsCommand::JobsCommand(const char* cmd_line,JobsList* jobs):BuiltInCommand(cmd_line),m_list(jobs)
 {}
 void JobsCommand::execute()
 {
   m_list->printJobsList();
 }
+
 QuitCommand::QuitCommand(const char* cmd_line,JobsList* jobs):BuiltInCommand(cmd_line),m_list(jobs)
 {}
 void QuitCommand::execute()
@@ -231,7 +239,77 @@ void QuitCommand::execute()
   SmallShell::getInstance().EndShell();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line):Command(cmd_line),m_pid(-1),m_backGround(_isBackgroundComamnd(cmd_line)),m_isComplex(findCharachter(cmd_line,'*')||findCharachter(cmd_line,'?')),m_listEntry(nullptr)
+
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **lastPwd) : BuiltInCommand(cmd_line), lastPwd(lastPwd) {}
+
+void ChangeDirCommand::ChangeDirTo(const char *path) {
+    // file path should be the second argeument
+    char CurrWorkingDir[MAX_PATH_LENGTH];
+    getcwd(CurrWorkingDir, MAX_PATH_LENGTH);
+    if (chdir(path) != 0) {
+        perror("smash error:CD failed");
+    } else {
+        delete[] *lastPwd;
+        *lastPwd = new char[MAX_PATH_LENGTH];
+        strcpy(*lastPwd, CurrWorkingDir);
+    }
+}
+
+void ChangeDirCommand::execute() {
+    if (m_argn == 2) {
+        // Check if the argument is "-"
+        if (strcmp(m_args[1], "-") == 0) {
+            if (*lastPwd == nullptr) {
+                printf("smash error: cd: OLDPWD not set");
+            } else {
+                //change_to_last_directory();
+                ChangeDirTo(*lastPwd);
+            }
+        } else {
+            ChangeDirTo(m_args[1]);
+        }
+    } else {
+        printf("smash error: cd: too many arguments");
+    }
+}
+
+ForegroundCommand::ForegroundCommand(const char *cmd_line, JobsList *jobs):  BuiltInCommand(cmd_line),jobs(jobs) {}
+
+void ForegroundCommand::execute() {
+
+    if(m_argn==1){
+        // get the process with the max pid
+        ExternalCommand* LastJob= jobs->getLastJob();
+        if(LastJob== nullptr){
+            // if the vector is empty perror
+            perror("smash error: fg: jobs list is empty");
+        }else{
+            //bring to foreground
+            //*****************jobs->bringToForeground(LastJob->)
+        }
+
+    }else if(m_argn==2){
+        // format the arguments to int and if not then perror
+        // print the process command line
+        //TODO bring the process with JOB_Id to the foreground
+        //TODO delete all the finshed commands
+
+    }else{
+        perror("smash error: fg: invalid arguments");
+    }
+
+
+
+}
+
+
+
+
+
+
+
+ExternalCommand::ExternalCommand(const char* cmd_line): Command(cmd_line), m_pid(-1), m_backGround(
+        _isBackgroundCommand(cmd_line)), m_isComplex(findCharacter(cmd_line, '*') || findCharacter(cmd_line, '?')), m_listEntry(nullptr)
 {}
 ExternalCommand::~ExternalCommand()
 {
@@ -344,4 +422,17 @@ void JobsList::removeJobById(int jobId)
       break; 
     }
   }
+}
+
+ExternalCommand *JobsList::getLastJob() {
+    ExternalCommand* jobToReturen = nullptr;
+    if (!m_jobs.empty()) {
+        jobToReturen = m_jobs.back();
+    }
+    return jobToReturen;
+}
+
+void JobsList::bringToForeground(int jobId) {
+
+
 }

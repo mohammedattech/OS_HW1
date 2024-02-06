@@ -8,9 +8,11 @@
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define MAX_PATH_LENGTH (80)
 
 class JobsList;
 class JobEntry;
+
 class Command {
  protected:
   std::string m_cmdLine;
@@ -27,14 +29,12 @@ class Command {
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
 };
-
 class BuiltInCommand : public Command {
  public:
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand()= default;
   virtual void execute()=0;
 };
-
 class ExternalCommand : public Command 
 {
   pid_t m_pid;
@@ -70,6 +70,7 @@ class RedirectionCommand : public Command {
   //void prepare() override;
   //void cleanup() override;
 };
+
 class ChangePromptCommand : public BuiltInCommand
 {
 public:
@@ -78,10 +79,11 @@ public:
   void execute() override;
 };
 
-
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
-  ChangeDirCommand(const char* cmd_line, char** plastPwd);
+char** lastPwd; // this is a pointer to the last working directory in smash
+  ChangeDirCommand(const char* cmd_line, char** lastPwd);
+  void ChangeDirTo(const char* path);
   virtual ~ChangeDirCommand() {}
   void execute() override;
 };
@@ -89,7 +91,6 @@ class ChangeDirCommand : public BuiltInCommand {
 class GetCurrDirCommand : public BuiltInCommand 
 {
  public:
-  static const int MAX_PATH_LENGTH=80;
   GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() {}
   void execute() override;
@@ -102,7 +103,6 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
-
 class QuitCommand : public BuiltInCommand {
   private:
    JobsList* m_list;
@@ -111,7 +111,6 @@ class QuitCommand : public BuiltInCommand {
    virtual ~QuitCommand()=default;
    void execute() override;
 };
-
 
 class JobEntry
 {
@@ -126,7 +125,6 @@ public:
 class JobsList {
  private:
   std::vector<ExternalCommand*> m_jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
- // TODO: Add your data members
  public:
   JobsList()=default;
   ~JobsList()=default;
@@ -136,8 +134,8 @@ class JobsList {
   void removeFinishedJobs();
   ExternalCommand * getJobById(int jobId);
   void removeJobById(int jobId);
-  //JobEntry * getLastJob(int* lastJobId);
-  //JobEntry *getLastStoppedJob(int *jobId);
+  ExternalCommand* getLastJob(); // Get the last job in the list
+  void bringToForeground(int jobId); // Bring a job to the foreground by jobId
   // TODO: Add extra methods or modify exisitng ones as needed
 }; 
 
@@ -159,8 +157,8 @@ class KillCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
- public:
+    JobsList* jobs;
+public:
   ForegroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~ForegroundCommand() {}
   void execute() override;
@@ -178,7 +176,7 @@ class SmallShell {
  private:
   JobsList* m_shellCommands;
   std::string m_prompt;
-  std::string m_lastDirectory;
+  char* m_lastDirectory;
   bool m_continueFlag;
   ExternalCommand* forGroundJob;
   SmallShell();
