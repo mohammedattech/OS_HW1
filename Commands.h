@@ -200,7 +200,8 @@ class SmallShell {
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();
-  void bringToForeground(ExternalCommand* cmd); 
+  void bringToForeground(ExternalCommand* cmd);
+  ExternalCommand* getForgroundJob() const; 
   // TODO: add extra methods as needed
 };
 
