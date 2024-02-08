@@ -15,10 +15,10 @@
 #include <sched.h>
 #include <limits.h>
 
+const std::string WHITESPACE = " \n\r\t\f\v";
 
 
 using namespace std;
-static char WHITESPACE=' ';
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -115,13 +115,42 @@ bool findCharacter(const char* cmd_line, char character)
 }
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell() {
-    m_lastDirectory= nullptr;
-// TODO: this implementation is not enough
+SmallShell::SmallShell():m_shellCommands(new JobsList()),m_prompt("smash"),m_lastDirectory(""),m_continueFlag(true),forGroundJob(nullptr)
+{
+  
 }
 
-SmallShell::~SmallShell() {
-// TODO: add your implementation
+SmallShell::~SmallShell() 
+{
+  delete m_shellCommands;
+}
+const std::string& SmallShell::getPrompt() const
+{
+  return m_prompt; 
+}
+void SmallShell::setPrompt(const std::string& newPrompt)
+{
+  m_prompt=newPrompt;
+}
+JobsList* SmallShell::getJobsList()
+{
+  return m_shellCommands;
+}
+bool SmallShell::canContinue() const
+{
+  return m_continueFlag;
+}
+void SmallShell::EndShell()
+{
+  m_continueFlag=false;
+}
+string* SmallShell::getLastDirectory()
+{
+  return &m_lastDirectory;
+}
+ExternalCommand* SmallShell::getForgroundJob() const
+{
+  return forGroundJob;
 }
 
 /**
@@ -129,30 +158,70 @@ SmallShell::~SmallShell() {
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
 	// For example:
-/*
-  string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
-  if (firstWord.compare("pwd") == 0) {
-    return new GetCurrDirCommand(cmd_line);
-  }
-  else if (firstWord.compare("ShowPId") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else if ...
-  .....
-  else {
+    string cmd_s = _trim(string(cmd_line));
+    string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+    string cmd_s = _trim(string(cmd_line));
+    if (cmd_s.find('|') != string::npos) 
+    {
+      return new PipeCommand(cmd_line);
+    } 
+    else if (cmd_s.find('>') != string::npos) 
+    {  
+      return new RedirectionCommand(cmd_line);
+    }
+
+    if (firstWord == "chprompt") 
+    {
+      return new ChangePromptCommand(cmd_line);
+    } 
+    else if (firstWord == "showpid" || firstWord == "showpid&") 
+    {
+      return new ShowPidCommand(cmd_line);
+    } 
+    else if (firstWord == "pwd" || firstWord == "pwd&") 
+    {
+      return new GetCurrDirCommand(cmd_line);
+    } 
+    else if (firstWord == "cd") 
+    {
+      return new ChangeDirCommand(cmd_line, &(m_lastDirectory));
+    } 
+    else if (firstWord == "jobs" || firstWord == "jobs&")
+    {
+      return new JobsCommand(cmd_line, m_shellCommands);
+    } 
+    else if (firstWord == "kill" || firstWord == "kill&") 
+    {
+      return new KillCommand(cmd_line, m_shellCommands);
+    } 
+    else if (firstWord == "fg" || firstWord == "fg&") 
+    {
+      return new ForegroundCommand(cmd_line, m_shellCommands);
+    }
+    else if (firstWord == "quit" || firstWord == "quit") 
+    {
+      return new  QuitCommand(cmd_line,m_shellCommands);
+    }
     return new ExternalCommand(cmd_line);
-  }
-  */
+  
   return nullptr;
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
   // for example:
-  // Command* cmd = CreateCommand(cmd_line);
-  // cmd->execute();
+  bool shouldBeDeleted=false;
+  Command* cmd = CreateCommand(cmd_line);
+  if(dynamic_cast<ExternalCommand*>(cmd)==nullptr)
+  {
+    shouldBeDeleted=true;
+  }
+  cmd->execute();
+  if(shouldBeDeleted)
+  {
+    delete cmd;
+  }
   // Please note that you must fork smash process for some commands (e.g., external commands....)
   //CreateCommand(cmd_line)->execute();
 }
@@ -190,7 +259,13 @@ int Command::getNumberOfArguments() const
 
 
 BuiltInCommand::BuiltInCommand(const char* cmdline):Command(cmdline)
-{}
+{
+  if(_isBackgroundCommand(m_cmdLine))
+  {
+    _removeBackgroundSign(m_cmdLine);
+    m_argn=_parseCommandLine(m_cmdLine,m_args);
+  }
+}
 ChangePromptCommand::ChangePromptCommand(const char* cmd_line):BuiltInCommand(cmd_line)
 {}
 void ChangePromptCommand::execute()
@@ -257,33 +332,40 @@ void QuitCommand::execute()
 }
 
 
-ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **lastPwd) : BuiltInCommand(cmd_line), lastPwd(lastPwd) {}
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, string* lastPwd) : BuiltInCommand(cmd_line), lastPwd(lastPwd) 
+{}
 
 void ChangeDirCommand::ChangeDirTo(const char *path) {
     // file path should be the second argeument
     char CurrWorkingDir[MAX_PATH_LENGTH];
     getcwd(CurrWorkingDir, MAX_PATH_LENGTH);
     if (chdir(path) != 0) {
-        perror("smash error:CD failed");
-    } else {
-        delete[] *lastPwd;
-        *lastPwd = new char[MAX_PATH_LENGTH];
-        strcpy(*lastPwd, CurrWorkingDir);
+      perror("smash error:CD failed");
+    } else 
+    {
+      *lastPwd=CurrWorkingDir;
     }
 }
 
 void ChangeDirCommand::execute() {
-    if (m_argn == 2) {
+    if (m_argn == 2) 
+    {
         // Check if the argument is "-"
-        if (strcmp(m_args[1], "-") == 0) {
-            if (*lastPwd == nullptr) {
-                printf("smash error: cd: OLDPWD not set");
-            } else {
-                //change_to_last_directory();
-                ChangeDirTo(*lastPwd);
-            }
-        } else {
-            ChangeDirTo(m_args[1]);
+        if (strcmp(m_args[1], "-") == 0) 
+        {
+          if (*lastPwd == "") 
+          {
+            printf("smash error: cd: OLDPWD not set");
+          } 
+          else 
+          {
+            //change_to_last_directory();
+            ChangeDirTo(lastPwd->c_str());
+          }
+        } 
+        else 
+        {
+          ChangeDirTo(m_args[1]);
         }
     } else {
         printf("smash error: cd: too many arguments");
@@ -634,6 +716,13 @@ int JobEntry::getJobId() const
 {
   return m_jobId;
 }
+JobsList::~JobsList()
+{
+  for(ExternalCommand* cmd:m_jobs)
+  {
+    delete cmd;
+  }
+}
 void JobsList::addJob(ExternalCommand* cmd)
 {
   int jobId;
@@ -681,6 +770,11 @@ bool JobFinished(ExternalCommand* cmd)
 }
 void JobsList::removeFinishedJobs()
 {
+  vector<ExternalCommand*>::iterator newEnd=std::remove_if(m_jobs.begin(),m_jobs.end(),JobFinished);
+  for(vector<ExternalCommand*>::iterator i=newEnd;i<m_jobs.end();i++)
+  {
+    delete (*i);
+  }
   m_jobs.erase(std::remove_if(m_jobs.begin(),m_jobs.end(),JobFinished),m_jobs.end());
 }
 ExternalCommand* JobsList::getJobById(int jobId)
@@ -724,6 +818,7 @@ void SmallShell::bringToForeground(ExternalCommand* cmd)
   {
     perror("smash error: waitpid failed");
   }
+  delete forGroundJob;
   forGroundJob=nullptr;
 }
 

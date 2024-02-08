@@ -84,13 +84,15 @@ public:
   void execute() override;
 };
 
-class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-char** lastPwd; // this is a pointer to the last working directory in smash
-  ChangeDirCommand(const char* cmd_line, char** lastPwd);
-  void ChangeDirTo(const char* path);
-  virtual ~ChangeDirCommand() {}
-  void execute() override;
+class ChangeDirCommand : public BuiltInCommand 
+{
+  private:
+   string* lastPwd;
+  public:
+   ChangeDirCommand(const char* cmd_line, string* lastPwd);
+   void ChangeDirTo(const char* path);
+   virtual ~ChangeDirCommand() {}
+   void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand 
@@ -132,7 +134,7 @@ class JobsList {
   std::vector<ExternalCommand*> m_jobs;//can be changed to external command instead of Command but wanted to keep it for know just in case we need it
  public:
   JobsList()=default;
-  ~JobsList()=default;
+  ~JobsList();
   void addJob(ExternalCommand* cmd);
   void printJobsList();
   void killAllJobs();
@@ -182,7 +184,7 @@ class SmallShell {
  private:
   JobsList* m_shellCommands;
   std::string m_prompt;
-  char* m_lastDirectory;
+  std::string m_lastDirectory;
   bool m_continueFlag;
   ExternalCommand* forGroundJob;
   SmallShell();
@@ -199,13 +201,13 @@ class SmallShell {
   ~SmallShell();
   void executeCommand(const char* cmd_line);
   const std::string& getPrompt() const;
-  const std::string& getLastCommand() const;
-  void setPrompt(std::string newPrompt);//maybe should be changes to const&
+  void setPrompt(const std::string& newPrompt);//maybe should be changes to const&
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();
   void bringToForeground(ExternalCommand* cmd);
-  ExternalCommand* getForgroundJob() const; 
+  ExternalCommand* getForgroundJob() const;
+  string* getLastDirectory();
   // TODO: add extra methods as needed
 };
 
