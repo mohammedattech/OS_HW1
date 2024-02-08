@@ -154,8 +154,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Command* cmd = CreateCommand(cmd_line);
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
-  char** args;
-  int argn=_parseCommandLine(cmd_line,args);
   //CreateCommand(cmd_line)->execute();
 }
 
@@ -377,9 +375,18 @@ void KillCommand::execute()
 }
 
 
-RedirectionCommand::RedirectionCommand(const char *cmd_line, std::string left, std::string right, bool append)
-        : Command(cmd_line),
-          left(left), right(right), append(append) {}
+RedirectionCommand::RedirectionCommand(const char *cmd_line)
+        : Command(cmd_line)
+        {
+          string cmd_s(cmd_line);
+          append = (cmd_s.find(">>") != string::npos);
+          left = cmd_s.substr(0, cmd_s.find('>'));
+          right = cmd_s.substr(cmd_s.find_last_of('>') + 1);
+          while (left.c_str()[0] == ' ')
+            left = left.substr(1);
+          while (right.c_str()[right.size() - 1] == ' ')
+            right = right.substr(0, right.size() - 1);
+        }
 
 void RedirectionCommand::execute() {
     int fd;
@@ -416,6 +423,85 @@ void RedirectionCommand::execute() {
     }
     if (close(out) == -1) {
         perror("smash error: close failed");
+        return;
+    }
+}
+PipeCommand::PipeCommand(const char* cmd_line):Command(cmd_line)
+{
+  string cmd_s(cmd_line);
+  inputCommand = cmd_s.substr(0,cmd_s.find('|'));
+  outPutCommand = cmd_s.substr(cmd_s.find('|')+1);
+  int pos=outPutCommand.find('&');
+  if(pos!=string::npos)
+  {
+    ToError=true;
+    outPutCommand=outPutCommand.substr(pos+1);
+  }
+  /*
+  inputCommand = cmd_s.find('&') != string::npos;
+  outPutCommand = cmd_s.substr(0, cmd_s.find('|'));
+  int tmp = flag ? cmd_s.find_last_of('&') : cmd_s.find_last_of('|');
+  string outPutCommand = cmd_s.substr(tmp + 1);
+  */
+}
+void PipeCommand::execute()
+{
+    int fd[2];
+    if (pipe(fd) == -1) {
+        perror("smash error: pipe failed");
+        return;
+    }
+    pid_t p;
+    if ((p = fork()) == 0) {
+        if (ToError) {
+            if(dup2(fd[1], 2)==-1){
+                perror("smash error: dup2 failed");
+                return;
+            }
+        } else {
+           if(dup2(fd[1], 1)==-1){
+               perror("smash error: dup2 failed");
+               return;
+           }
+        }
+        if(close(fd[0])==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        if(close(fd[1])==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        SmallShell::getInstance().executeCommand(inputCommand.c_str());
+        exit(0);
+    }
+    pid_t p1;
+    if ((p1 = fork()) == 0) {
+        if(dup2(fd[0], 0)==-1){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        if(close(fd[0])==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        if(close(fd[1])==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        SmallShell::getInstance().executeCommand(outPutCommand.c_str());
+        exit(0);
+    }
+    if(close(fd[0])==-1){
+        perror("smash error: close failed");
+        return;
+    }
+    if(close(fd[1])==-1){
+        perror("smash error: close failed");
+        return;
+    }
+    if(waitpid(p, nullptr,WUNTRACED) == -1 || waitpid(p1, nullptr,WUNTRACED) == -1){
+        perror("smash error: waitpid failed");
         return;
     }
 }

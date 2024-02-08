@@ -55,7 +55,9 @@ class ExternalCommand : public Command
 };
 
 class PipeCommand : public Command {
-  // TODO: Add your data members
+  string inputCommand;
+  string outPutCommand;
+  bool ToError;
  public:
   PipeCommand(const char* cmd_line);
   virtual ~PipeCommand() {}
@@ -67,7 +69,7 @@ class RedirectionCommand : public Command {
     std::string right;
     bool append;
  public:
-  explicit RedirectionCommand(const char* cmd_line, std::string left, std::string right, bool append);
+  explicit RedirectionCommand(const char* cmd_line);
   virtual ~RedirectionCommand() {}
   void execute() override;
   //void prepare() override;
