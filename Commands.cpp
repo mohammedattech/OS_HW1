@@ -4,11 +4,17 @@
 #include <vector>
 #include <sstream>
 #include <sys/types.h>
-#include <signal.h>
-#include <iomanip>
-#include "Commands.h"
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <iomanip>
+#include "Commands.h"
+#include <algorithm>
+#include <signal.h>
+#include <fcntl.h>
+#include <fstream>
+#include <sched.h>
+#include <limits.h>
+
 
 
 using namespace std;
@@ -329,8 +335,6 @@ void ForegroundCommand::execute() {
         perror("smash error: fg: invalid arguments");
     }
 
-
-
 }
 
 KillCommand::KillCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),jobs(jobs) {}
@@ -372,6 +376,49 @@ void KillCommand::execute()
 
 }
 
+
+RedirectionCommand::RedirectionCommand(const char *cmd_line, std::string left, std::string right, bool append)
+        : Command(cmd_line),
+          left(left), right(right), append(append) {}
+
+void RedirectionCommand::execute() {
+    int fd;
+    if (append) {
+        fd = open(right.c_str(), O_APPEND | O_WRONLY | O_CREAT , S_IRUSR | S_IWUSR | S_IXGRP | S_IRGRP | S_IROTH | S_IXOTH);
+    } else {
+        fd = open(right.c_str(), O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR | S_IWUSR | S_IXGRP | S_IRGRP | S_IROTH | S_IXOTH);
+    }
+    if (fd == -1) {
+        perror("smash error: open failed");
+        return;
+    }
+    int out = dup(1);
+    if (out == -1) {
+        perror("smash error: dup failed");
+        return;
+    }
+    if (close(1) == -1) {
+        perror("smash error: close failed");
+        return;
+    }
+    if (dup2(fd, 1) == -1) {
+        perror("smash error: dup2 failed");
+        return;
+    }
+    SmallShell::getInstance().executeCommand(left.c_str());
+    if (close(1) == -1) {
+        perror("smash error: close failed");
+        return;
+    }
+    if (dup(out) == -1) {
+        perror("smash error: dup failed");
+        return;
+    }
+    if (close(out) == -1) {
+        perror("smash error: close failed");
+        return;
+    }
+}
 
 ChmodCommand::ChmodCommand(const char* cmd_line):BuiltInCommand(cmd_line)
 {}
