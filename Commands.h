@@ -44,7 +44,7 @@ class ExternalCommand : public Command
   char* m_noAnd;
  public:
   ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand()=default;
+  virtual ~ExternalCommand();
   void execute() override;
   bool backGround() const;
   bool complex() const;
@@ -201,7 +201,7 @@ class SmallShell {
   ~SmallShell();
   void executeCommand(const char* cmd_line);
   const std::string& getPrompt() const;
-  void setPrompt(const std::string& newPrompt);//maybe should be changes to const&
+  void setPrompt(std::string newPrompt);//maybe should be changes to const&
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();
