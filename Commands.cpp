@@ -223,7 +223,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
   //CreateCommand(cmd_line)->execute();
 }
 
-Command::Command(const char* cmdline):m_cmdLine(new char[calculateLength(cmdline)]),m_argn(_parseCommandLine(cmdline,nullptr))
+Command::Command(const char* cmdline):m_cmdLine(new char[string(cmdline).size()+1]),m_argn(_parseCommandLine(cmdline,nullptr))
 {
   m_args=(new char*[m_argn+1]);
   m_args[0]=nullptr;
