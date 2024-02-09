@@ -9,7 +9,7 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 #define MAX_PATH_LENGTH (80)
-
+using namespace std;
 class JobsList; 
 class JobEntry;
 
@@ -205,7 +205,7 @@ class SmallShell {
   JobsList* getJobsList();
   bool canContinue() const;
   void EndShell();
-  void bringToForeground(ExternalCommand* cmd);
+  void bringToForeground(ExternalCommand* cmd,bool fromFg);
   ExternalCommand* getForgroundJob() const;
   string* getLastDirectory();
   // TODO: add extra methods as needed

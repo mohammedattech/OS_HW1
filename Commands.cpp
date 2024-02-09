@@ -161,7 +161,6 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-    string cmd_s = _trim(string(cmd_line));
     if (cmd_s.find('|') != string::npos) 
     {
       return new PipeCommand(cmd_line);
@@ -208,6 +207,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
   // for example:
+  m_shellCommands->removeFinishedJobs();
   bool shouldBeDeleted=false;
   Command* cmd = CreateCommand(cmd_line);
   if(dynamic_cast<ExternalCommand*>(cmd)==nullptr)
@@ -401,7 +401,7 @@ void ForegroundCommand::execute()
     }
     else
     {
-      smash.bringToForeground(LastJob);
+      smash.bringToForeground(LastJob,true);
       //bring to foreground
     }
   }
@@ -424,7 +424,7 @@ void ForegroundCommand::execute()
     }
     else
     {
-      smash.bringToForeground(jobs->getJobById(jobId));
+      smash.bringToForeground(jobs->getJobById(jobId),true);
       smash.getJobsList()->removeJobById(jobId);
     }
     // print the process command line
@@ -445,7 +445,7 @@ void KillCommand::execute()
 
   int jobId;
   int signal;
-  SmallShell& smash = SmallShell::getInstance();
+  //SmallShell& smash = SmallShell::getInstance();
   if(m_argn==3)
   {
     //checking the format 
@@ -550,7 +550,7 @@ PipeCommand::PipeCommand(const char* cmd_line):Command(cmd_line)
   string cmd_s(cmd_line);
   inputCommand = cmd_s.substr(0,cmd_s.find('|'));
   outPutCommand = cmd_s.substr(cmd_s.find('|')+1);
-  int pos=outPutCommand.find('&');
+  unsigned int pos=outPutCommand.find('&');
   if(pos!=string::npos)
   {
     ToError=true;
@@ -769,7 +769,7 @@ void ExternalCommand::execute()
       }
       else
       {
-        shell.bringToForeground(this);
+        shell.bringToForeground(this,false);
       }
     }
   }
@@ -810,6 +810,7 @@ void JobsList::printJobsList()
 }
 void JobsList::killAllJobs()
 {
+  std::cout <<"smash: sending SIGKILL signal to " << m_jobs.size() << " jobs:" <<std::endl;
   for(const ExternalCommand* job: m_jobs)
   {
     std::cout << job->getPid() << ": " << job->getCommandLine() << std::endl;
@@ -839,7 +840,7 @@ void JobsList::removeFinishedJobs()
   {
     delete (*i);
   }
-  m_jobs.erase(std::remove_if(m_jobs.begin(),m_jobs.end(),JobFinished),m_jobs.end());
+  m_jobs.erase(newEnd,m_jobs.end());
 }
 ExternalCommand* JobsList::getJobById(int jobId)
 {
@@ -875,11 +876,14 @@ ExternalCommand *JobsList::getLastJob()
   return jobToReturen;
 }
 
-void SmallShell::bringToForeground(ExternalCommand* cmd)
+void SmallShell::bringToForeground(ExternalCommand* cmd,bool fromFg)
 {
   m_shellCommands->removeJobById(cmd->getJobId());
   forGroundJob=cmd;
-  std::cout << cmd->getCommandLine() << " " << cmd->getPid() <<std::endl;
+  if(fromFg)
+  {
+    std::cout << cmd->getCommandLine() << " " << cmd->getPid() <<std::endl;
+  }
   if(waitpid(cmd->getPid(),nullptr,0)==-1)
   {
     perror("smash error: waitpid failed");

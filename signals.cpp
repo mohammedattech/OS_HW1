@@ -20,7 +20,7 @@ void ctrlCHandler(int sig_num)
       }
       else
       {
-        std::cout << "smash: procces " << forgroundCommand->getPid() << " was killed";
+        std::cout << "smash: procces " << forgroundCommand->getPid() << " was killed" << std::endl;
       }
     }
   }
