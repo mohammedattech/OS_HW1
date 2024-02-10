@@ -550,7 +550,7 @@ PipeCommand::PipeCommand(const char* cmd_line):Command(cmd_line)
   string cmd_s(cmd_line);
   inputCommand = cmd_s.substr(0,cmd_s.find('|'));
   outPutCommand = cmd_s.substr(cmd_s.find('|')+1);
-  unsigned int pos=outPutCommand.find('&');
+  int pos=outPutCommand.find('&');
   if(pos!=string::npos)
   {
     ToError=true;
@@ -734,7 +734,7 @@ void ExternalCommand::execute()
     Command=m_noAnd;
   }
   char* cmd="./bin/bash";
-  char* const argv[]={"./bin/bash","-c",Command};
+  char* const argv[]={"./bin/bash","-c",Command,nullptr};
   pid_t sonPid=fork();
   if(sonPid==-1)
   {
