@@ -733,8 +733,8 @@ void ExternalCommand::execute()
   {
     Command=m_noAnd;
   }
-  char* cmd="./bin/bash";
-  char* const argv[]={"./bin/bash","-c",Command,nullptr};
+  char* cmd="/bin/bash";
+  char* const argv[]={"/bin/bash","-c",Command,nullptr};
   pid_t sonPid=fork();
   if(sonPid==-1)
   {
@@ -750,7 +750,7 @@ void ExternalCommand::execute()
       }
       if(m_isComplex)
       {
-        execvp(cmd,argv);
+        execv(cmd,argv);
       }
       else
       {
