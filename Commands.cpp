@@ -457,7 +457,7 @@ void KillCommand::execute()
     {
       try
       {
-        signal=stoi(++m_args[1]);
+        signal=stoi(m_args[1]+1);
         jobId=stoi(m_args[2]);
       }
       catch(const std::exception& e)
@@ -466,7 +466,9 @@ void KillCommand::execute()
       }
       if(jobs->getJobById(jobId)==nullptr)
       {
-        perror("smash error: kill: job-id <job-id> does not exist");
+        std::ostringstream oss;
+        oss << "smash error: fg: job-id " << jobId <<" does not exist";
+        perror(oss.str().c_str());
       }
       else
       {
