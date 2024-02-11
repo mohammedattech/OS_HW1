@@ -553,7 +553,7 @@ PipeCommand::PipeCommand(const char* cmd_line):Command(cmd_line)
   inputCommand = cmd_s.substr(0,cmd_s.find('|'));
   outPutCommand = cmd_s.substr(cmd_s.find('|')+1);
   int pos=outPutCommand.find('&');
-  if(pos!=string::npos)
+  if(outPutCommand.find('&')!=string::npos)
   {
     ToError=true;
     outPutCommand=outPutCommand.substr(pos+1);
@@ -735,8 +735,9 @@ void ExternalCommand::execute()
   {
     Command=m_noAnd;
   }
-  char* cmd="/bin/bash";
-  char* const argv[]={"/bin/bash","-c",Command,nullptr};
+  char cmd[10]="/bin/bash";
+  char flag[3]="-c";
+  char* const argv[]={cmd,flag,Command,nullptr};
   pid_t sonPid=fork();
   if(sonPid==-1)
   {
@@ -837,12 +838,12 @@ bool JobFinished(ExternalCommand* cmd)
 }
 void JobsList::removeFinishedJobs()
 {
-  vector<ExternalCommand*>::iterator newEnd=std::remove_if(m_jobs.begin(),m_jobs.end(),JobFinished);
-  for(vector<ExternalCommand*>::iterator i=newEnd;i<m_jobs.end();i++)
+  auto partitionPoint = std::partition(m_jobs.begin(), m_jobs.end(),[](ExternalCommand* cmd) {return !JobFinished(cmd);});
+  for(vector<ExternalCommand*>::iterator i=partitionPoint;i<m_jobs.end();i++)
   {
     delete (*i);
   }
-  m_jobs.erase(newEnd,m_jobs.end());
+  m_jobs.erase(partitionPoint,m_jobs.end());
 }
 ExternalCommand* JobsList::getJobById(int jobId)
 {
