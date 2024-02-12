@@ -167,6 +167,8 @@ public:
 class KillCommand : public BuiltInCommand {
     JobsList* jobs;
  public:
+  static const int MIN_SIG=1;
+  static const int MAX_SIG=31;
   KillCommand(const char* cmd_line, JobsList* jobs);
   virtual ~KillCommand() {}
   void execute() override;

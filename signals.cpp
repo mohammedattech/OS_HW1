@@ -16,11 +16,11 @@ void ctrlCHandler(int sig_num)
     {
       if(kill(forgroundCommand->getPid(),SIGKILL)==-1)
       {
-        perror("smash error:kill failed");
+        std::cerr<<"smash error: kill failed"<<std::endl;
       }
       else
       {
-        std::cout << "smash: procces " << forgroundCommand->getPid() << " was killed" << std::endl;
+        std::cout << "smash: process " << forgroundCommand->getPid() << " was killed" << std::endl;
       }
     }
   }
