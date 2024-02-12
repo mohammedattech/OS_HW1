@@ -365,7 +365,7 @@ void ChangeDirCommand::execute() {
         {
           if (*lastPwd == "") 
           {
-            printf("smash error: cd: OLDPWD not set");
+            std::cerr << "smash error: cd: OLDPWD not set" << std::endl;
           } 
           else 
           {
@@ -380,7 +380,7 @@ void ChangeDirCommand::execute() {
     } 
     else 
     {
-        printf("smash error: cd: too many arguments");
+      std::cerr <<"smash error: cd: too many arguments" <<std::endl;
     }
 }
 
@@ -397,7 +397,7 @@ void ForegroundCommand::execute()
     if(LastJob== nullptr)
     {
       // if the vector is empty perror
-      perror("smash error: fg: jobs list is empty");
+      std::cerr <<"smash error: fg: jobs list is empty"<< std::endl;
     }
     else
     {
@@ -405,7 +405,7 @@ void ForegroundCommand::execute()
       //bring to foreground
     }
   }
-  else if(m_argn==2)
+  else if(m_argn>=2)
   {
     // format the arguments to int and if not then perror
     try
@@ -414,18 +414,24 @@ void ForegroundCommand::execute()
     }
     catch(const std::exception& e)
     {
-      perror("smash error: fg: invalid arguments");
+      std::cerr <<"smash error: fg: invalid arguments"<< std::endl;
+      return;
     }
     if(jobs->getJobById(jobId)==nullptr)
     {
-      std::ostringstream oss;
-      oss << "smash error: fg: job-id " << jobId <<" does not exist";
-      perror(oss.str().c_str());
+      std::cerr << "smash error: fg: job-id " << jobId <<" does not exist" <<std::endl;
     }
     else
     {
-      smash.bringToForeground(jobs->getJobById(jobId),true);
-      smash.getJobsList()->removeJobById(jobId);
+      if (m_argn==2)
+      {
+        smash.bringToForeground(jobs->getJobById(jobId),true);
+        smash.getJobsList()->removeJobById(jobId);
+      }
+      else
+      {
+        std::cerr <<"smash error: fg: invalid arguments"<< std::endl;
+      }
     }
     // print the process command line
     //TODO bring the process with JOB_Id to the foreground
@@ -433,7 +439,7 @@ void ForegroundCommand::execute()
     }
     else
     {
-      perror("smash error: fg: invalid arguments");
+      std::cerr <<"smash error: fg: invalid arguments"<< std::endl;
     }
 
 }
@@ -442,16 +448,31 @@ KillCommand::KillCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(c
 
 void KillCommand::execute() 
 {
-
   int jobId;
   int signal;
   //SmallShell& smash = SmallShell::getInstance();
   if(m_argn==3)
   {
     //checking the format 
+    try
+    {
+      jobId=stoi(m_args[2]);
+    }
+    catch(const std::exception& e)
+    {
+      std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
+      return;
+    }
+    if(!jobs->getJobById(jobId))
+    {
+      std::cerr << "smash error: kill: job-id " << jobId <<" does not exist" <<std::endl;
+      return;
+    }
+
+    
     if(m_args[1][0]!='-')
     {
-      perror("smash error: kill: invalid arguments");
+      std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
     }
     else
     {
@@ -462,26 +483,29 @@ void KillCommand::execute()
       }
       catch(const std::exception& e)
       {
-        perror("smash error: kill: invalid arguments");
+        std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
+        return;
       }
       if(jobs->getJobById(jobId)==nullptr)
       {
-        std::ostringstream oss;
-        oss << "smash error: fg: job-id " << jobId <<" does not exist";
-        perror(oss.str().c_str());
+        std::cerr << "smash error: kill: job-id " << jobId <<" does not exist" <<std::endl;
       }
       else
       {
         if (kill(jobs->getJobById(jobId)->getPid(),signal)==-1)
         {
-          perror("smash error:kill failed");
+          perror("smash error: kill failed");
+        }
+        else
+        {
+          std::cout <<"signal number " << signal << " was sent to pid " << jobs->getJobById(jobId)->getPid() << std::endl;
         }
       }
     }
   }
   else
   {
-    perror("smash error: kill: invalid arguments");
+    std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
   }
 }
 
@@ -651,7 +675,7 @@ void ChmodCommand::execute()
 {
   if(m_argn!=3)
   {
-    perror("smash error: chmod:invalid arguments");
+    std::cerr <<"smash error: chmod:invalid arguments"<< std::endl;
     return;
   }
   string modestr(m_args[1]);
@@ -663,12 +687,12 @@ void ChmodCommand::execute()
   }
   catch(const std::exception& e)
   {
-    perror("smash error: chmod:invalid arguments");
+    std::cerr <<"smash error: chmod:invalid arguments"<< std::endl;
     return;
   }
   if(mode>0777||mode<0)
   {
-    perror("smash error: chmod:invalid arguments");
+    std::cerr <<"smash error: chmod:invalid arguments"<< std::endl;
     return;
   }
   if(chmod(m_args[2],mode)==-1)
@@ -819,7 +843,7 @@ void JobsList::killAllJobs()
     std::cout << job->getPid() << ": " << job->getCommandLine() << std::endl;
     if(kill(job->getPid(),SIGKILL)==-1)
     {
-      perror("smash error:kill failed");
+      perror("smash error: kill failed");
     }
   }
 }
@@ -838,12 +862,19 @@ bool JobFinished(ExternalCommand* cmd)
 }
 void JobsList::removeFinishedJobs()
 {
-  auto partitionPoint = std::partition(m_jobs.begin(), m_jobs.end(),[](ExternalCommand* cmd) {return !JobFinished(cmd);});
-  for(vector<ExternalCommand*>::iterator i=partitionPoint;i<m_jobs.end();i++)
+  auto i=m_jobs.begin();
+  while (i!=m_jobs.end()&&m_jobs.size())
   {
-    delete (*i);
+    if(JobFinished(*i))
+    {
+      delete *i;
+      i=m_jobs.erase(i);
+    }
+    else
+    {
+      i++;
+    }
   }
-  m_jobs.erase(partitionPoint,m_jobs.end());
 }
 ExternalCommand* JobsList::getJobById(int jobId)
 {
