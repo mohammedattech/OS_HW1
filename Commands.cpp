@@ -451,7 +451,7 @@ void KillCommand::execute()
   int jobId;
   int signal;
   //SmallShell& smash = SmallShell::getInstance();
-  if(m_argn==3)
+  if(m_argn>=3)
   {
     //checking the format 
     try
@@ -479,16 +479,16 @@ void KillCommand::execute()
       try
       {
         signal=stoi(m_args[1]+1);
-        jobId=stoi(m_args[2]);
       }
       catch(const std::exception& e)
       {
         std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
         return;
       }
-      if(jobs->getJobById(jobId)==nullptr)
+      if(m_argn!=3)
       {
-        std::cerr << "smash error: kill: job-id " << jobId <<" does not exist" <<std::endl;
+        std::cerr <<"smash error: kill: invalid arguments"<< std::endl;
+        return;
       }
       else
       {
@@ -520,6 +520,8 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line): Command(cmd_line)
     left = left.substr(1);
   while (right.c_str()[right.size() - 1] == ' ')
     right = right.substr(0, right.size() - 1);
+  while (right.c_str()[0] == ' ')
+    right = right.substr(1);
 }
 
 void RedirectionCommand::execute() 
@@ -707,7 +709,7 @@ ExternalCommand::ExternalCommand(const char* cmd_line): Command(cmd_line), m_pid
 {
   if(m_backGround)
   {
-    char* dummy=new char[calculateLength(cmd_line)];
+    char* dummy=new char[string(cmd_line).size()+1];
     strcpy(dummy,m_cmdLine);
     _removeBackgroundSign(dummy);
     int i=0;
@@ -925,7 +927,3 @@ void SmallShell::bringToForeground(ExternalCommand* cmd,bool fromFg)
   delete forGroundJob;
   forGroundJob=nullptr;
 }
-
-
-
-
