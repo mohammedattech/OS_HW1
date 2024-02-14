@@ -609,7 +609,7 @@ void PipeCommand::execute()
       if(dup2(fd[1], 2)==-1)
       {
         perror("smash error: dup2 failed");
-        return;
+        exit(0);
       }
     } 
     else 
@@ -617,18 +617,18 @@ void PipeCommand::execute()
       if(dup2(fd[1], 1)==-1)
       {
         perror("smash error: dup2 failed");
-        return;
+        exit(0);
       }
     }
     if(close(fd[0])==-1)
     {
       perror("smash error: close failed");
-      return;
+      exit(0);
     }
     if(close(fd[1])==-1)
     {
       perror("smash error: close failed");
-      return;
+      exit(0);
     }
     SmallShell::getInstance().executeCommand(inputCommand.c_str());
     exit(0);
@@ -643,17 +643,17 @@ void PipeCommand::execute()
     if(dup2(fd[0], 0)==-1)
     {
       perror("smash error: dup2 failed");
-      return;
+      exit(0);
     }
     if(close(fd[0])==-1)
     {
       perror("smash error: close failed");
-      return;
+      exit(0);
     }
     if(close(fd[1])==-1)
     {
       perror("smash error: close failed");
-      return;
+      exit(0);
     }
     SmallShell::getInstance().executeCommand(outPutCommand.c_str());
     exit(0);
