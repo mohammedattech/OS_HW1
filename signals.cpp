@@ -16,7 +16,7 @@ void ctrlCHandler(int sig_num)
     {
       if(kill(forgroundCommand->getPid(),SIGKILL)==-1)
       {
-        std::cerr<<"smash error: kill failed"<<std::endl;
+        perror("smash error: kill failed");
       }
       else
       {
