@@ -201,6 +201,10 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     {
       return new  QuitCommand(cmd_line,m_shellCommands);
     }
+    else if (firstWord == "chmod")
+    {
+		  return new ChmodCommand(cmd_line);
+	  }
     return new ExternalCommand(cmd_line);
 }
 
