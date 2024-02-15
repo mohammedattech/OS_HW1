@@ -685,6 +685,11 @@ void ChmodCommand::execute()
     return;
   }
   string modestr(m_args[1]);
+  if(modestr.length()!=3)
+  {
+    std::cerr <<"smash error: chmod:invalid arguments"<< std::endl;
+    return;
+  }
   modestr.insert(0,1,'0');
   int mode;
   try
