@@ -1,3 +1,0 @@
-C:/Users/update/OneDrive - Technion/Technion/Semester_5/234123-OS/HomeWorks/HW1/OS_HW1/cmake-build-debug/CMakeFiles/skeleton_smash.dir
-C:/Users/update/OneDrive - Technion/Technion/Semester_5/234123-OS/HomeWorks/HW1/OS_HW1/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/update/OneDrive - Technion/Technion/Semester_5/234123-OS/HomeWorks/HW1/OS_HW1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
