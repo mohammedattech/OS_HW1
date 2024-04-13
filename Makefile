@@ -13,5 +13,4 @@ $(OBJS): %.o: %.cpp
 	$(COMPILER) $(COMPILER_FLAGS) -c $^
 
 clean:
-	rm -rf $(SMASH_BIN) $(OBJS) $(TESTS_OUTPUTS) 
-	rm -rf $(SUBMITTERS).zip
+	rm -rf $(SMASH_BIN) $(OBJS) $(TESTS_OUTPUTS)
